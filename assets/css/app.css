@@ -1,0 +1,18 @@
+/* This file is for your main application css. */
+
+@import "./phoenix.css";
+
+.checked {
+    color: orange;
+  }
+
+  ul.hr {
+    margin: 0; /* Обнуляем значение отступов */
+    padding: 4px; /* Значение полей */
+    text-align: left;
+   }
+   ul.hr li {
+    display: inline-block; /* Отображать как строчный элемент */
+    margin-right: 5px; /* Отступ слева */
+    padding: 3px; /* Поля вокруг текста */
+   }

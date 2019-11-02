@@ -1,0 +1,13 @@
+ <body>
+    <header>
+      <h1>Awesome Elixir</h1>
+      <p>
+        Elixir is awesome. And it has a vast awesome list: <a href="https://github.com/h4cc/awesome-elixir">h4cc/awesome-elixir</a>.
+        This is a mirror of it where each library is marked with number of
+        stars at <a href="https://github.com">Github</a> and number of days since
+        the last commit.
+      </p>
+    </header>
+  
+<h2>Updating in progress, please wait...</h2>
+</body>
