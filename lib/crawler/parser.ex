@@ -1,4 +1,5 @@
 defmodule Parser do
+  require Logger
   def get_content do
     {:ok, {{_version, 200, _reasonPhrase}, _headers, body}} = :httpc.request(:get, {'https://raw.githubusercontent.com/h4cc/awesome-elixir/master/README.md', []}, [], [])
     answer = String.split(:erlang.list_to_binary(body), "\n")
@@ -21,25 +22,51 @@ defmodule Parser do
   def get_stars_floki(rs) do
     url = to_charlist(rs.href)
     #url = 'https://github.com/erlang/docker-erlang-otp'
-    stars = case :httpc.request(:get, {url, []}, [], [{:body_format, :binary}]) do
-      {:ok, {{_version, _status, _reasonPhrase}, _headers, body}} -> case Floki.find(body, "a.social-count.js-social-count") |> Floki.attribute("aria-label") do
-                                                                       [numAsText | _tail] -> get_number_from_text(numAsText)
-                                                                       _-> numAsText1 = Floki.find(body, "a.social-count.js-social-count") |> Floki.text
-                                                                           get_number_from_text(numAsText1)
+    {_status, stars, time} = case :httpc.request(:get, {url, []}, [], [{:body_format, :binary}]) do
+      {:ok, {{_version, _status, _reasonPhrase}, _headers, body}} -> case get_stars(body, rs) do
+                                                                       {:ok, stars} -> case get_time(body, rs) do
+                                                                                          {:ok, time} -> {:ok, stars, time}
+                                                                                          # {:error, _reason} -> {:error, -888, -888}
+                                                                                       end
+
+
+
+                                                                      #  error ->  Logger.log(:error, "got from site: " <> error <> " " <> rs.href)
+                                                                      #            {:error, -888, -888}
                                                                      end
-                                                                _ -> -555
+                                                                smth -> Logger.log(:error, "can't get site content, got from site: " <> smth <> " " <> rs.href)
+                                                                        {:error, -555, -1}
             end
 
-    %StarsTime{href: rs.href, stars: stars}
+    %StarsTime{href: rs.href, stars: stars, time: time}
   end
 
-  defp get_number_from_text(text) do
+  def get_stars(body, rs) do
+    case Floki.find(body, "a.social-count.js-social-count") |> Floki.attribute("aria-label") do
+      [numAsText | _tail] -> stars = get_number_from_text(numAsText, rs.href)
+                             {:ok, stars}
+      _-> numAsText1 = Floki.find(body, "a.social-count.js-social-count") |> Floki.text
+          stars = get_number_from_text(numAsText1, rs.href)
+          {:ok, stars}
+    end
+  end
+
+  def get_time(body, rs) do
+    result = Floki.find(body, "div.no-wrap.d-flex.flex-self-start.flex-items-baseline") |> Floki.find("relative-time") |> Floki.attribute("datetime")
+    IO.inspect result
+    IO.puts rs.href
+    {:ok, 5}
+  end
+
+  defp get_number_from_text(text, url) do
     stars = case Regex.run(~r/(\d+)/, text) do
               [ _, stars] -> String.to_integer(stars)
-              _ -> -444
+              _ -> Logger.log(:error, "can't parse number, got text for parsing: " <> text <> " " <> url)
+                   -444
             end
     stars
   end
+
   def get_time do
     url = 'https://github.com/rozap/exquery'
     {:ok, {{_version, 200, _reasonPhrase}, _headers, body}} = :httpc.request(:get, {url, []}, [], [])
