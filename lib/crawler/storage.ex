@@ -44,9 +44,9 @@ end
     :ets.select(@ets_table, ms)
   end
 
-  def update_stars(%StarsTime{href: key, stars: stars}) do
+  def update_stars(%StarsTime{href: key, stars: stars, time: time}) do
     [{key, repoStruct}] = :ets.lookup(@ets_table, key)
-    repoStruct1 = %Repo{repoStruct | stars: stars}
+    repoStruct1 = %Repo{repoStruct | stars: stars, time: time}
     :ets.insert(@ets_table, {key, stars, repoStruct1})
   end
 

@@ -1,5 +1,5 @@
 defmodule Repo do
-  defstruct [:topic, :show?, :name, :href, :description, stars: -777]
+  defstruct [:topic, :show?, :name, :href, :description, stars: -777, time: -1]
 end
 
 defmodule StarsTime do

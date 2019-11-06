@@ -47,10 +47,11 @@
       <h2 id = "<%= ai.topic %>"><%= ai.topic %></h2>
       <ul>
     <%= else %>
-      <li>
+      <%= if   ai.time >= 365 do %><li class="shadow"><%= else %><li> <%= end %>
           <a href=<%= ai.href %>><%= ai.name %></a>
           <span class="fa fa-star checked"></span>
           <sub><%= ai.stars %></sub>
+          <span><%= ai.time %></span>
           <span><%= ai.description %></span>
       </li>
     <%= end %>

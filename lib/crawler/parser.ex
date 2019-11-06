@@ -24,20 +24,19 @@ defmodule Parser do
     #url = 'https://github.com/erlang/docker-erlang-otp'
     {_status, stars, time} = case :httpc.request(:get, {url, []}, [], [{:body_format, :binary}]) do
       {:ok, {{_version, _status, _reasonPhrase}, _headers, body}} -> case get_stars(body, rs) do
+                                                                        #  {:ok, stars} -> {:ok, stars, -999}
+                                                                        {:ok, -444} -> Logger.log(:error, "got from site: " <> " " <> rs.href)
                                                                        {:ok, stars} -> case get_time(body, rs) do
-                                                                                          {:ok, time} -> {:ok, stars, time}
-                                                                                          # {:error, _reason} -> {:error, -888, -888}
+                                                                                         {:ok, datetime} -> {:ok, stars, get_hours_ago(datetime)}
+                                                                                         # {:error, _reason} -> {:error, -888, -888}
+                                                                                         #_ -> IO.puts "WTF"
                                                                                        end
-
-
-
-                                                                      #  error ->  Logger.log(:error, "got from site: " <> error <> " " <> rs.href)
-                                                                      #            {:error, -888, -888}
+                                                                         #error ->  Logger.log(:error, "got from site: " <> error <> " " <> rs.href)
+                                                                        #           {:error, -888, -888}
                                                                      end
-                                                                smth -> Logger.log(:error, "can't get site content, got from site: " <> smth <> " " <> rs.href)
-                                                                        {:error, -555, -1}
-            end
-
+      smth -> Logger.log(:error, "can't get site content, got from site: " <> smth <> " " <> rs.href)
+              {:error, -555, -1}
+    end
     %StarsTime{href: rs.href, stars: stars, time: time}
   end
 
@@ -52,10 +51,18 @@ defmodule Parser do
   end
 
   def get_time(body, rs) do
-    result = Floki.find(body, "div.no-wrap.d-flex.flex-self-start.flex-items-baseline") |> Floki.find("relative-time") |> Floki.attribute("datetime")
-    IO.inspect result
-    IO.puts rs.href
-    {:ok, 5}
+    datetime = case Floki.find(body, "div.no-wrap.d-flex.flex-self-start.flex-items-baseline") |> Floki.find("relative-time") |> Floki.attribute("datetime") do
+                 [] -> str_url = rs.href <> "/commits"
+                url = to_charlist(str_url)
+                #IO.inspect url
+                case get_time2(url, rs) do
+                  {:ok, datetime} -> datetime
+                  {:error, reason} -> reason
+                end
+                [datetime] -> datetime
+                smth -> smth
+               end
+    {:ok, datetime}
   end
 
   defp get_number_from_text(text, url) do
@@ -67,16 +74,24 @@ defmodule Parser do
     stars
   end
 
-  def get_time do
-    url = 'https://github.com/rozap/exquery'
-    {:ok, {{_version, 200, _reasonPhrase}, _headers, body}} = :httpc.request(:get, {url, []}, [], [])
-    dates = Regex.scan(~r/(><time-ago datetime="\d{4}-\d{2}-\d{2}T)/, :erlang.list_to_binary(body))
-    dates1 = for [el1, _el2] <- dates do
-      [e1, _] = Regex.run(~r/(\d{4}-\d{2}-\d{2})/, el1)
-      e1
+  def get_time2(url, _rs) do
+    case :httpc.request(:get, {url, []}, [], [{:body_format, :binary}]) do
+      {:ok, {{_version, 200, _reasonPhrase}, _headers, body}} -> dates1 = Floki.find(body, "relative-time.no-wrap") |> Floki.attribute("datetime")
+                                                                #IO.inspect dates1
+                                                                lastDate = Enum.max(dates1)
+                                                                #  IO.inspect lastDate
+                                                                {:ok, lastDate}
+      error -> Logger.info (error <> " " <> url)
+               {:error, :reason}
+
     end
-    Enum.max(dates1)
   end
+
+def get_hours_ago(datetime) do
+  {:ok, datetime_u, _} = DateTime.from_iso8601(datetime)
+  delta = (DateTime.utc_now() |> DateTime.to_unix()) - DateTime.to_unix(datetime_u)
+  div(delta, 86400)
+end
 
   def parse([head | tail], topic, resultList) do
       case topic_string?(head) do
