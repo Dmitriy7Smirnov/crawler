@@ -20,19 +20,19 @@ defmodule Parser do
     stars
   end
   def get_stars_floki(rs) do
-    url = to_charlist(rs.href)
+    clear_ref = String.replace(rs.href, ".git", "")
+    url = to_charlist(clear_ref)
     #url = 'https://github.com/erlang/docker-erlang-otp'
     {_status, stars, time} = case :httpc.request(:get, {url, []}, [], [{:body_format, :binary}]) do
       {:ok, {{_version, _status, _reasonPhrase}, _headers, body}} -> case get_stars(body, rs) do
-                                                                        #  {:ok, stars} -> {:ok, stars, -999}
                                                                         {:ok, -444} -> Logger.log(:error, "got from site: " <> " " <> rs.href)
-                                                                       {:ok, stars} -> case get_time(body, rs) do
+                                                                                       {:ok, -1001, -1002}
+                                                                        {:ok, stars} ->  case  get_time(body, rs) do
                                                                                          {:ok, datetime} -> {:ok, stars, get_hours_ago(datetime)}
                                                                                          # {:error, _reason} -> {:error, -888, -888}
-                                                                                         #_ -> IO.puts "WTF"
                                                                                        end
                                                                          #error ->  Logger.log(:error, "got from site: " <> error <> " " <> rs.href)
-                                                                        #           {:error, -888, -888}
+                                                                         #          {:error, -888, -888}
                                                                      end
       smth -> Logger.log(:error, "can't get site content, got from site: " <> smth <> " " <> rs.href)
               {:error, -555, -1}
