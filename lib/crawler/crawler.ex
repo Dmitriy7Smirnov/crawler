@@ -28,8 +28,10 @@ defmodule Crawler do
     Enum.map(parserStructs, &Storage.create_data/1)
     Process.flag(:trap_exit, true)
     IO.puts "Start get stars"
-    Task.async_stream(parserStructs, Parser, :get_stars_floki, [], [max_concurrency: 10, ordered: false, timeout: 50000])
+    Task.async_stream(parserStructs, Parser, :get_stars_time_struct, [], [max_concurrency: 10, ordered: false, timeout: 50000])
       |> Enum.to_list()
+      |> Enum.filter(fn {status, _} -> status == :ok end)
+      |> Enum.map(fn {:ok , get_stars_time_struct_function_result} -> get_stars_time_struct_function_result end)
       |> Enum.filter(fn {status, _} -> status == :ok end)
       |> Enum.map(fn {_, starsTimeStruct} -> starsTimeStruct end)
       |> Enum.map(&Storage.update_stars/1)
