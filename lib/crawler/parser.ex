@@ -1,39 +1,38 @@
 defmodule Parser do
   require Logger
-  def get_content do
+  def get_repos do
     {:ok, {{_version, 200, _reasonPhrase}, _headers, body}} = :httpc.request(:get, {'https://raw.githubusercontent.com/h4cc/awesome-elixir/master/README.md', []}, [], [])
     answer = String.split(:erlang.list_to_binary(body), "\n")
     parse(answer, nil, [])
   end
-  def get_stars do
-    url = 'https://github.com/rozap/exquery'
-    {:ok, {{_version, 200, _reasonPhrase}, _headers, body}} = :httpc.request(:get, {url, []}, [], [])
-    #str = "aria-label=\"31 users starred this repository\">"
-    starsStr = case Regex.run(~r/(".* users starred this repository">)/, :erlang.list_to_binary(body)) do
-      [ _, starsStr] -> starsStr
-      _ -> false
-    end
-    stars = case Regex.run(~r/(\d+)/, starsStr) do
-      [ _, stars] -> stars
-      _ -> false
-    end
-    stars
-  end
+
   def get_stars_floki(rs) do
     clear_ref = String.replace(rs.href, ".git", "")
     url = to_charlist(clear_ref)
     #url = 'https://github.com/erlang/docker-erlang-otp'
     {_status, stars, time} = case :httpc.request(:get, {url, []}, [], [{:body_format, :binary}]) do
-      {:ok, {{_version, _status, _reasonPhrase}, _headers, body}} -> case get_stars(body, rs) do
-                                                                        {:ok, -444} -> Logger.log(:error, "got from site: " <> " " <> rs.href)
-                                                                                       {:ok, -1001, -1002}
-                                                                        {:ok, stars} ->  case  get_time(body, rs) do
-                                                                                         {:ok, datetime} -> {:ok, stars, get_hours_ago(datetime)}
-                                                                                         # {:error, _reason} -> {:error, -888, -888}
-                                                                                       end
-                                                                         #error ->  Logger.log(:error, "got from site: " <> error <> " " <> rs.href)
-                                                                         #          {:error, -888, -888}
-                                                                     end
+      {:ok, {{_version, _status, _reasonPhrase}, _headers, body}}
+        ->
+         case get_stars(body, rs) do
+           {:ok, -444}
+             ->
+               Logger.log(:error, "got from site: " <> " " <> rs.href)
+               {:ok, -1001, -1002}
+            {:ok, stars}
+              ->
+                case  get_time(body, rs) do
+                  {:ok, datetime}
+                    ->
+                      {:ok, stars, get_hours_ago(datetime)}
+                  # {:error, _reason}
+                    #->
+                      #{:error, -888, -888}
+                end
+            #error
+              #->
+                #Logger.log(:error, "got from site: " <> error <> " " <> rs.href)
+                #{:error, -888, -888}
+         end
       smth -> Logger.log(:error, "can't get site content, got from site: " <> smth <> " " <> rs.href)
               {:error, -555, -1}
     end
@@ -42,9 +41,13 @@ defmodule Parser do
 
   def get_stars(body, rs) do
     case Floki.find(body, "a.social-count.js-social-count") |> Floki.attribute("aria-label") do
-      [numAsText | _tail] -> stars = get_number_from_text(numAsText, rs.href)
-                             {:ok, stars}
-      _-> numAsText1 = Floki.find(body, "a.social-count.js-social-count") |> Floki.text
+      [numAsText | _tail]
+        ->
+          stars = get_number_from_text(numAsText, rs.href)
+          {:ok, stars}
+      _
+        ->
+          numAsText1 = Floki.find(body, "a.social-count.js-social-count") |> Floki.text
           stars = get_number_from_text(numAsText1, rs.href)
           {:ok, stars}
     end
@@ -67,22 +70,29 @@ defmodule Parser do
 
   defp get_number_from_text(text, url) do
     stars = case Regex.run(~r/(\d+)/, text) do
-              [ _, stars] -> String.to_integer(stars)
-              _ -> Logger.log(:error, "can't parse number, got text for parsing: " <> text <> " " <> url)
-                   -444
+              [ _, stars]
+                -> String.to_integer(stars)
+              _
+                ->
+                  Logger.log(:error, "can't parse number, got text for parsing: " <> text <> " " <> url)
+                  -444
             end
     stars
   end
 
   def get_time2(url, _rs) do
     case :httpc.request(:get, {url, []}, [], [{:body_format, :binary}]) do
-      {:ok, {{_version, 200, _reasonPhrase}, _headers, body}} -> dates1 = Floki.find(body, "relative-time.no-wrap") |> Floki.attribute("datetime")
-                                                                #IO.inspect dates1
-                                                                lastDate = Enum.max(dates1)
-                                                                #  IO.inspect lastDate
-                                                                {:ok, lastDate}
-      error -> Logger.info (error <> " " <> url)
-               {:error, :reason}
+      {:ok, {{_version, 200, _reasonPhrase}, _headers, body}}
+        ->
+          dates1 = Floki.find(body, "relative-time.no-wrap") |> Floki.attribute("datetime")
+          #IO.inspect dates1
+          lastDate = Enum.max(dates1)
+          #  IO.inspect lastDate
+          {:ok, lastDate}
+      error
+        ->
+          Logger.info (error <> " " <> url)
+          {:error, :reason}
 
     end
   end
@@ -94,19 +104,25 @@ def get_hours_ago(datetime) do
 end
 
   def parse([head | tail], topic, resultList) do
-      case topic_string?(head) do
-        true -> case get_topic(head) do
-                  "Books" -> parse([], topic, resultList)
-                       _ -> parse(tail, get_topic(head), resultList)
+    case topic_string?(head) do
+      true
+        ->
+          case get_topic(head) do
+            "Books" -> parse([], topic, resultList)
+            _ -> parse(tail, get_topic(head), resultList)
+          end
+      false
+        ->
+          case ref_string?(head) do
+            true
+              ->
+                case get_params(topic, head) do
+                  false -> parse(tail, topic, resultList)
+                  _ -> parse(tail, topic, [get_params(topic, head) | resultList])
                 end
-        false -> case ref_string?(head) do
-                     true -> case get_params(topic, head) do
-                          false -> parse(tail, topic, resultList)
-                              _ -> parse(tail, topic, [get_params(topic, head) | resultList])
-                             end
-                     false -> parse(tail, topic, resultList)
-                 end
-      end
+            false -> parse(tail, topic, resultList)
+          end
+    end
   end
 
   def parse([], _topic, resultList) do

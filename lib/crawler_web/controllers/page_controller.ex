@@ -4,7 +4,7 @@ defmodule CrawlerWeb.PageController do
   def index(conn, _params) do
     min_stars_str = conn.query_params["min_stars"]
     min_stars = Utils.str_to_int_def(min_stars_str)
-    contents = Storage.get_data(min_stars)
+    contents = Storage.get_repos(min_stars)
       |> Enum.map(fn {_key, value} -> value end)
       |> Enum.sort(fn(%Repo{topic: topic1, name: name1}, %Repo{topic: topic2, name: name2}) ->  topic1 <> String.downcase(name1) <= topic2 <> String.downcase(name2) end)
       |> insert_topics()

@@ -24,7 +24,7 @@ defmodule Crawler do
   @impl true
   def handle_info(:crawl, state) do
     IO.inspect "CRAWLER HAD CRAWLED"
-    parserStructs = Parser.get_content()
+    parserStructs = Parser.get_repos()
     Enum.map(parserStructs, &Storage.create_data/1)
     Process.flag(:trap_exit, true)
     IO.puts "Start get stars"

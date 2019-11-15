@@ -32,7 +32,7 @@ end
     :ets.insert_new(@ets_table, {new_data.href, new_data})
   end
 
-  def get_data(threshold) do
+  def get_repos(threshold) do
     ms = case threshold do
            10 -> fun do { key, stars, repo } when stars >= 10 -> {key, repo} end
            50 -> fun do { key, stars, repo } when stars >= 50 -> {key, repo} end
