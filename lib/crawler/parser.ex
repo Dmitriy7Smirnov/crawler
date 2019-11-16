@@ -6,17 +6,17 @@ defmodule Parser do
     parse(answer, nil, [])
   end
 
-  defp parse([], _topic, resultList) do
-    Enum.reverse(resultList)
+  defp parse([], _topic, repoResultList) do
+    Enum.filter(repoResultList, fn elem_repo_or_false -> elem_repo_or_false end) |> Enum.reverse()
   end
 
-  defp parse([head | tail], topic, resultList) do
+  defp parse([head | tail], topic, repoResultList) do
     case topic_string?(head) do
       true
         ->
           case get_topic(head) do
-            "Books" -> parse([], topic, resultList)
-            _ -> parse(tail, get_topic(head), resultList)
+            "Books" -> parse([], topic, repoResultList)
+            _ -> parse(tail, get_topic(head), repoResultList)
           end
       false
         ->
@@ -24,10 +24,10 @@ defmodule Parser do
             true
               ->
                 case get_params(topic, head) do
-                  false -> parse(tail, topic, resultList)
-                  _ -> parse(tail, topic, [get_params(topic, head) | resultList])
+                  false -> parse(tail, topic, repoResultList)
+                  _ -> parse(tail, topic, [get_params(topic, head) | repoResultList])
                 end
-            false -> parse(tail, topic, resultList)
+            false -> parse(tail, topic, repoResultList)
           end
     end
   end
@@ -70,7 +70,7 @@ defmodule Parser do
       _ -> false
     end
     if topic && name && href && description do
-      %Repo{topic: topic, show?: false, name: name, href: href, description: description}
+      %Repo{topic: topic, name: name, href: href, description: description}
     else
       false
     end
@@ -115,7 +115,7 @@ defmodule Parser do
           {:ok, number}
       smth
         ->
-          Logger.log(:error, "can't parse number, got text for parsing: " <> text <> " " <> url_str)
+          Logger.error( "can't parse number, got text for parsing: " <> text <> " " <> url_str)
           {:error, smth}
     end
   end

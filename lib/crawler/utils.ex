@@ -1,5 +1,4 @@
 defmodule Utils do
-
   def str_to_int_def(strAsNumber, default \\ 0) do
     case strAsNumber do
       nil -> default
