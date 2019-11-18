@@ -1,6 +1,4 @@
 defmodule Storage do
-  import Ex2ms
-  @compile {:parse_transform, :ms_transform}
   use GenServer
   @ets_table :ets_storage
 
@@ -33,14 +31,11 @@ end
   end
 
   def get_repos(threshold) do
-    ms = case threshold do
-           10 -> fun do { key, stars, repo } when stars >= 10 -> {key, repo} end
-           50 -> fun do { key, stars, repo } when stars >= 50 -> {key, repo} end
-           100 -> fun do { key, stars, repo } when stars >= 100 -> {key, repo} end
-           500 -> fun do { key, stars, repo } when stars >= 500 -> {key, repo} end
-           1000 -> fun do { key, stars, repo } when stars >= 1000 -> {key, repo} end
-               _-> fun do { key, stars, repo } when stars >= 0 -> {key, repo} end
-         end
+    threshold1  =  case threshold do
+                     threshold when is_integer(threshold) and threshold > 0 -> threshold
+                     _ -> 0
+                   end
+    ms =  [{{:"$1",:"$2",:"$3"},[{:>=,:"$2",threshold1}],[{{:"$1",:"$3"}}]}]
     :ets.select(@ets_table, ms)
   end
 
